@@ -8,12 +8,6 @@ inputs:
       The script is expected at scripts/<script_name>.
       The BATS test is derived by convention: saludo.sh -> tests/test_saludo.bats
     required: true
-  allow_failure:
-    description: >
-      If "true", the action will report test results but will not fail the workflow.
-      Useful for optional challenges (retos) where failure should not block the pipeline.
-    required: false
-    default: "false"
 
 runs:
   using: composite
@@ -93,14 +87,9 @@ runs:
       shell: bash
       run: |
         if [[ "${{ steps.bats.outputs.status }}" != "success" ]]; then
-          if [[ "${{ inputs.allow_failure }}" == "true" ]]; then
-            echo "::warning::BATS tests failed for ${{ inputs.script_name }} (allow_failure=true, not blocking):"
-            echo "${{ steps.bats.outputs.result }}"
-          else
-            echo "::error::BATS tests failed for ${{ inputs.script_name }}:"
-            echo "${{ steps.bats.outputs.result }}"
-            exit 1
-          fi
+          echo "::error::BATS tests failed for ${{ inputs.script_name }}:"
+          echo "${{ steps.bats.outputs.result }}"
+          exit 1
         else
           echo "::notice::All tests passed for ${{ inputs.script_name }}"
         fi
