@@ -1,0 +1,48 @@
+name: Check Terraform Lint
+description: Check Terraform best practices and naming conventions using TFLint
+
+runs:
+  using: composite
+  steps:
+    # Let's assume that setup is already done in workflow to avoid repeat steps
+    # - name: Setup Terraform
+    #   uses: hashicorp/setup-terraform@v4
+
+    - name: Setup TFLint
+      uses: terraform-linters/setup-tflint@v4
+
+    - name: Copy TFLint Config
+      shell: bash
+      run: cp "${{ github.action_path }}/../../../config/.tflint.hcl" .tflint.hcl
+
+    - name: Init TFLint
+      shell: bash
+      run: tflint --init
+
+    - name: Run TFLint
+      id: lint
+      shell: bash
+      run: |
+        if tflint --format json > tflint_output.json 2>&1; then
+          echo "result=TFLint found no issues." >> "$GITHUB_OUTPUT"
+          echo "status=success" >> "$GITHUB_OUTPUT"
+        else
+          ISSUES=$(jq -r '.issues[] | "- [\(.rule.severity)] \(.rule.name): \(.message) (\(.range.filename):\(.range.start.line))"' tflint_output.json)
+          ERRORS=$(jq -r '.errors[] | "- [error] \(.message)"' tflint_output.json)
+          COMBINED="${ISSUES}${ISSUES:+$'\n'}${ERRORS}"
+          echo "result<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$COMBINED" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+          echo "status=failure" >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Print Result
+      shell: bash
+      run: |
+        if [ "${{ steps.lint.outputs.status }}" = "success" ]; then
+          echo "::notice::Congratulations! ${{ steps.lint.outputs.result }}"
+        else
+          echo "::error::TFLint issues found:"
+          echo "${{ steps.lint.outputs.result }}"
+          exit 1
+        fi

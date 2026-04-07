@@ -1,0 +1,34 @@
+name: Check Terraform Formatting
+description: Check Terraform formatting using terraform fmt
+
+runs:
+  using: composite
+  steps:
+      # Let's assume that setup is already done in workflow to avoid repeat steps
+      # - name: Setup Terraform
+      #   uses: hashicorp/setup-terraform@v4
+
+    - name: Check Terraform Format
+      id: fmt
+      shell: bash
+      run: |
+        if terraform fmt -check -recursive -diff > fmt_output.txt 2>&1; then
+          echo "result=All files are properly formatted." >> "$GITHUB_OUTPUT"
+          echo "status=success" >> "$GITHUB_OUTPUT"
+        else
+          echo "result<<EOF" >> "$GITHUB_OUTPUT"
+          cat fmt_output.txt >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+          echo "status=failure" >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Print Result
+      shell: bash
+      run: |
+        if [ "${{ steps.fmt.outputs.status }}" = "success" ]; then
+          echo "::notice::Congratulations! ${{ steps.fmt.outputs.result }}"
+        else
+          echo "::error::Terraform formatting issues found:"
+          echo "${{ steps.fmt.outputs.result }}"
+          exit 1
+        fi

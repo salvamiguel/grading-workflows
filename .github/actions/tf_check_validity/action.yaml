@@ -1,0 +1,55 @@
+name: Check Terraform Validity
+description: Check Terraform structural validity using terraform init and validate
+
+runs:
+  using: composite
+  steps:
+    # Let's assume that setup is already done in workflow to avoid repeat steps
+    # - name: Setup Terraform
+    #   uses: hashicorp/setup-terraform@v4
+
+    - name: Terraform Init
+      id: init
+      shell: bash
+      run: |
+        if terraform init -backend=false > init_output.txt 2>&1; then
+          echo "status=success" >> "$GITHUB_OUTPUT"
+        else
+          echo "result<<EOF" >> "$GITHUB_OUTPUT"
+          cat init_output.txt >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+          echo "status=failure" >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Terraform Validate
+      if: steps.init.outputs.status == 'success'
+      id: validate
+      shell: bash
+      run: |
+        VALIDATE_JSON=$(terraform validate -json)
+        VALID=$(echo "$VALIDATE_JSON" | jq -r '.valid')
+        if [ "$VALID" = "true" ]; then
+          echo "result=Terraform configuration is valid." >> "$GITHUB_OUTPUT"
+          echo "status=success" >> "$GITHUB_OUTPUT"
+        else
+          ERRORS=$(echo "$VALIDATE_JSON" | jq -r '.diagnostics[] | "- [\(.severity)] \(.summary): \(.detail) (\(.range.filename):\(.range.start.line))"')
+          echo "result<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$ERRORS" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+          echo "status=failure" >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Print Result
+      shell: bash
+      run: |
+        if [ "${{ steps.init.outputs.status }}" != "success" ]; then
+          echo "::error::Terraform init failed:"
+          echo "${{ steps.init.outputs.result }}"
+          exit 1
+        elif [ "${{ steps.validate.outputs.status }}" = "success" ]; then
+          echo "::notice::Congratulations! ${{ steps.validate.outputs.result }}"
+        else
+          echo "::error::Terraform validation errors found:"
+          echo "${{ steps.validate.outputs.result }}"
+          exit 1
+        fi

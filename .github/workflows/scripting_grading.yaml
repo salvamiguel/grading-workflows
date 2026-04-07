@@ -1,0 +1,97 @@
+name: Scripting Grading
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  grade-lab1:
+    name: "Lab 1: ${{ matrix.script }}"
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - script: saludo.sh
+          - script: clasificar.sh
+          - script: calculadora.sh
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Test
+        uses: salvamiguel/grading-workflows/.github/actions/scripting_test@main
+        with:
+          script_name: ${{ matrix.script }}
+
+  grade-lab1-retos:
+    name: "Reto 1: ${{ matrix.script }}"
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - script: ppt.sh
+          - script: genpass.sh
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Test
+        uses: salvamiguel/grading-workflows/.github/actions/scripting_test@main
+        with:
+          script_name: ${{ matrix.script }}
+          allow_failure: "true"
+
+  grade-lab2:
+    name: "Lab 2: ${{ matrix.script }}"
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - script: top_ips.sh
+          - script: monitor_disco.sh
+          - script: backup.sh
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Test
+        uses: salvamiguel/grading-workflows/.github/actions/scripting_test@main
+        with:
+          script_name: ${{ matrix.script }}
+
+  grade-lab2-retos:
+    name: "Reto 2: ${{ matrix.script }}"
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - script: csv_report.sh
+          - script: healthcheck.sh
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Test
+        uses: salvamiguel/grading-workflows/.github/actions/scripting_test@main
+        with:
+          script_name: ${{ matrix.script }}
+          allow_failure: "true"
+
+  grade-lab3:
+    name: "Lab 3: ${{ matrix.script }}"
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - script: tf-wrapper.sh
+          - script: tf-wrapper.bats
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Test
+        uses: salvamiguel/grading-workflows/.github/actions/scripting_test@main
+        with:
+          script_name: ${{ matrix.script }}

@@ -1,0 +1,83 @@
+name: Lint GitHub Actions Workflow
+description: Check GitHub Actions workflow syntax and best practices using yamllint and actionlint
+
+inputs:
+  workflow_path:
+    description: Path to the workflow file to lint
+    required: true
+    default: .github/workflows/ci.yml
+
+runs:
+  using: composite
+  steps:
+    - name: Install yamllint
+      shell: bash
+      run: pip install --quiet yamllint
+
+    - name: Install actionlint
+      shell: bash
+      run: |
+        ACTIONLINT_VERSION="1.7.12"
+        curl -sL "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz" \
+          | tar xz -C /usr/local/bin actionlint
+
+    - name: Run yamllint
+      id: yamllint
+      shell: bash
+      run: |
+        cat > /tmp/.yamllint.yml << 'YAMLCFG'
+        extends: default
+        rules:
+          truthy:
+            check-keys: false
+          line-length:
+            max: 200
+        YAMLCFG
+
+        if yamllint -c /tmp/.yamllint.yml -f parsable "${{ inputs.workflow_path }}" > yamllint_output.txt 2>&1; then
+          echo "result=YAML syntax is valid." >> "$GITHUB_OUTPUT"
+          echo "status=success" >> "$GITHUB_OUTPUT"
+        else
+          echo "result<<EOF" >> "$GITHUB_OUTPUT"
+          cat yamllint_output.txt >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+          echo "status=failure" >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Run actionlint
+      id: actionlint
+      shell: bash
+      run: |
+        if actionlint -format '{{json .}}' "${{ inputs.workflow_path }}" > actionlint_output.json 2>&1; then
+          echo "result=No actionlint issues found." >> "$GITHUB_OUTPUT"
+          echo "status=success" >> "$GITHUB_OUTPUT"
+        else
+          ISSUES=$(jq -r '. | "- [\(.kind // "error")] \(.message) (\(.filepath):\(.line):\(.column))"' actionlint_output.json)
+          echo "result<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$ISSUES" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+          echo "status=failure" >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Print Result
+      shell: bash
+      run: |
+        FAILED=false
+
+        if [ "${{ steps.yamllint.outputs.status }}" != "success" ]; then
+          echo "::error::yamllint issues found:"
+          echo "${{ steps.yamllint.outputs.result }}"
+          FAILED=true
+        fi
+
+        if [ "${{ steps.actionlint.outputs.status }}" != "success" ]; then
+          echo "::error::actionlint issues found:"
+          echo "${{ steps.actionlint.outputs.result }}"
+          FAILED=true
+        fi
+
+        if [ "$FAILED" = "true" ]; then
+          exit 1
+        else
+          echo "::notice::Congratulations! Workflow ${{ inputs.workflow_path }} passed all lint checks."
+        fi
