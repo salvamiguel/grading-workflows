@@ -18,7 +18,7 @@ jobs:
           - script: clasificar.sh
           - script: calculadora.sh
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Test
         uses: salvamiguel/grading-workflows/.github/actions/scripting_test@v1.0.1
@@ -36,7 +36,7 @@ jobs:
           - script: ppt.sh
           - script: genpass.sh
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Test
         uses: salvamiguel/grading-workflows/.github/actions/scripting_test@v1.0.1
@@ -54,7 +54,7 @@ jobs:
           - script: monitor_disco.sh
           - script: backup.sh
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Test
         uses: salvamiguel/grading-workflows/.github/actions/scripting_test@v1.0.1
@@ -72,7 +72,7 @@ jobs:
           - script: csv_report.sh
           - script: healthcheck.sh
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Test
         uses: salvamiguel/grading-workflows/.github/actions/scripting_test@v1.0.1
@@ -89,7 +89,7 @@ jobs:
           - script: tf-wrapper.sh
           - script: tf-wrapper.bats
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Test
         uses: salvamiguel/grading-workflows/.github/actions/scripting_test@v1.0.1
